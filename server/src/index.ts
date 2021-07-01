@@ -5,7 +5,7 @@ import express from 'express'
 import { buildSchema } from 'type-graphql'
 import cors from 'cors'
 
-import { __prod__ } from './constants'
+import { USER_COOKIE, __prod__ } from './constants'
 import mikroOrmConfig from './mikro-orm.config'
 import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
@@ -33,7 +33,7 @@ const main = async () => {
 
   app.use(
     session({
-      name: 'qid',
+      name: USER_COOKIE,
       store: new RedisStore({
         client: redisClient,
         disableTouch: true,
