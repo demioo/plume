@@ -1,18 +1,16 @@
-import 'reflect-metadata'
 import { MikroORM } from '@mikro-orm/core'
 import { ApolloServer } from 'apollo-server-express'
-import express from 'express'
-import { buildSchema } from 'type-graphql'
+import connectReddis from 'connect-redis'
 import cors from 'cors'
-
+import express from 'express'
+import session from 'express-session'
+import redis from 'redis'
+import 'reflect-metadata'
+import { buildSchema } from 'type-graphql'
 import { USER_COOKIE, __prod__ } from './constants'
 import mikroOrmConfig from './mikro-orm.config'
 import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
-
-import redis from 'redis'
-import session from 'express-session'
-import connectReddis from 'connect-redis'
 import { OrmContext } from './types'
 
 const main = async () => {
