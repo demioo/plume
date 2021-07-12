@@ -1,5 +1,6 @@
 import argon2 from 'argon2'
 import { OrmContext } from 'src/types'
+import { sendEmail } from '../utils/sendEmail'
 import {
   Arg,
   Ctx,
@@ -9,10 +10,15 @@ import {
   Query,
   Resolver,
 } from 'type-graphql'
-import { USER_COOKIE } from '../constants'
+import {
+  FORGET_PASSWORD_PREFIX,
+  FORGET_PASSWORD_TIME,
+  USER_COOKIE,
+} from '../constants'
 import { User } from '../entities/User'
 import { validateRegister } from '../utils/helpers'
 import { UsernamePasswordInput } from './UsernamePasswordInput'
+import { v4 } from 'uuid'
 
 @ObjectType()
 class FieldError {
@@ -34,6 +40,34 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg('email') email: string,
+    @Ctx() { em, redis }: OrmContext
+  ) {
+    const user = await em.findOne(User, { email })
+    if (!user) {
+      // returning true here to prevent malicious users from phishing
+      return true
+    }
+
+    const token = v4()
+
+    await redis.set(
+      FORGET_PASSWORD_PREFIX + token,
+      user.id,
+      'ex',
+      FORGET_PASSWORD_TIME
+    )
+
+    await sendEmail(
+      email,
+      `<a href="http://localhost:3000/change-password/${token}">Reset password</a>`
+    )
+
+    return true
+  }
+
   @Query(() => User, { nullable: true })
   async me(@Ctx() { em, req }: OrmContext) {
     if (!req.session.userId) {
