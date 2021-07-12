@@ -1,6 +1,5 @@
 import argon2 from 'argon2'
 import { OrmContext } from 'src/types'
-import { sendEmail } from '../utils/sendEmail'
 import {
   Arg,
   Ctx,
@@ -10,6 +9,7 @@ import {
   Query,
   Resolver,
 } from 'type-graphql'
+import { v4 } from 'uuid'
 import {
   FORGET_PASSWORD_PREFIX,
   FORGET_PASSWORD_TIME,
@@ -17,8 +17,8 @@ import {
 } from '../constants'
 import { User } from '../entities/User'
 import { validateRegister } from '../utils/helpers'
+import { sendEmail } from '../utils/sendEmail'
 import { UsernamePasswordInput } from './UsernamePasswordInput'
-import { v4 } from 'uuid'
 
 @ObjectType()
 class FieldError {
@@ -40,6 +40,59 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg('token') token: string,
+    @Arg('newPassword') newPassword: string,
+    @Ctx() { redis, em, req }: OrmContext
+  ): Promise<UserResponse> {
+    if (newPassword.length <= 4) {
+      return {
+        errors: [
+          {
+            field: 'newPassword',
+            message: 'length must be greater than 4 characters',
+          },
+        ],
+      }
+    }
+
+    const key = FORGET_PASSWORD_PREFIX + token
+    const userId = await redis.get(key)
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: 'token expired',
+          },
+        ],
+      }
+    }
+
+    const user = await em.findOne(User, { id: parseInt(userId) })
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: 'user no longer exists',
+          },
+        ],
+      }
+    }
+
+    user.password = await argon2.hash(newPassword)
+    await em.persistAndFlush(user)
+
+    await redis.del(key)
+
+    // log in user after password change
+    req.session.userId = user.id
+
+    return { user }
+  }
+
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg('email') email: string,
