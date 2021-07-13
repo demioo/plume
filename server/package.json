@@ -7,8 +7,7 @@
     "dev": "nodemon dist/index.js",
     "watch": "tsc -w",
     "start": "node dist/index.js",
-    "start2": "ts-node src/index.ts",
-    "create:migration": "mikro-orm migration:create"
+    "start2": "ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,10 +26,6 @@
     "typescript": "^4.3.4"
   },
   "dependencies": {
-    "@mikro-orm/cli": "^4.5.6",
-    "@mikro-orm/core": "^4.5.6",
-    "@mikro-orm/migrations": "^4.5.6",
-    "@mikro-orm/postgresql": "^4.5.6",
     "apollo-server-express": "^2.25.2",
     "argon2": "^0.28.2",
     "connect-redis": "^6.0.0",
@@ -45,13 +40,7 @@
     "reflect-metadata": "^0.1.13",
     "ts-node": "^10.0.0",
     "type-graphql": "^1.1.1",
+    "typeorm": "^0.2.34",
     "uuid": "^8.3.2"
-  },
-  "mikro-orm": {
-    "useTsNode": true,
-    "configPaths": [
-      "./src/mikro-orm.config.ts",
-      "./dist/mikro-orm.config.js"
-    ]
   }
 }
