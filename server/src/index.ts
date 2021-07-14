@@ -15,7 +15,7 @@ import { UserResolver } from './resolvers/user'
 import { OrmContext } from './types'
 
 const main = async () => {
-  const conn = await createConnection({
+  await createConnection({
     type: 'postgres',
     database: 'plume',
     username: 'postgres',

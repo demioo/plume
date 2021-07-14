@@ -1,4 +1,4 @@
-import { UsernamePasswordInput } from 'src/resolvers/UsernamePasswordInput'
+import { UsernamePasswordInput } from 'resolvers/UsernamePasswordInput'
 
 export const emailIsValid = (email: string) => {
   const emailRegex =

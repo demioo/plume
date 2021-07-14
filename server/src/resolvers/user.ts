@@ -1,5 +1,4 @@
 import argon2 from 'argon2'
-import { OrmContext } from 'src/types'
 import {
   Arg,
   Ctx,
@@ -9,7 +8,7 @@ import {
   Query,
   Resolver,
 } from 'type-graphql'
-import { getConnection } from 'typeorm'
+import { OrmContext } from 'types'
 import { v4 } from 'uuid'
 import {
   FORGET_PASSWORD_PREFIX,
@@ -137,7 +136,8 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async register(
-    @Arg('options', () => UsernamePasswordInput) options: UsernamePasswordInput,
+    @Arg('options', () => UsernamePasswordInput)
+    options: UsernamePasswordInput,
     @Ctx() { req }: OrmContext
   ): Promise<UserResponse> {
     const { username, password, email } = options
