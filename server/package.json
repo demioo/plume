@@ -1,10 +1,10 @@
 {
-  "name": "breadit-server",
+  "name": "plume-server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon dist/index.js",
+    "dev": "nodemon -r tsconfig-paths/register src/index.ts",
     "watch": "tsc -w",
     "start": "node dist/index.js",
     "start2": "ts-node src/index.ts"
@@ -23,6 +23,7 @@
     "@types/redis": "^2.8.30",
     "@types/uuid": "^8.3.1",
     "class-validator": "^0.13.1",
+    "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.4"
   },
   "dependencies": {
