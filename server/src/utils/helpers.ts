@@ -1,4 +1,4 @@
-import { UsernamePasswordInput } from 'resolvers/UsernamePasswordInput'
+import { UsernamePasswordInput } from './fieldTypes'
 
 export const emailIsValid = (email: string) => {
   const emailRegex =

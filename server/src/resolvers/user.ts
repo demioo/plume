@@ -1,13 +1,5 @@
 import argon2 from 'argon2'
-import {
-  Arg,
-  Ctx,
-  Field,
-  Mutation,
-  ObjectType,
-  Query,
-  Resolver,
-} from 'type-graphql'
+import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql'
 import { OrmContext } from 'types'
 import { v4 } from 'uuid'
 import {
@@ -16,27 +8,12 @@ import {
   USER_COOKIE,
 } from '../constants'
 import { User } from '../entities/User'
+import {
+  UsernamePasswordInput,
+  UserResponse,
+} from '../utils/fieldTypes'
 import { validateRegister } from '../utils/helpers'
 import { sendEmail } from '../utils/sendEmail'
-import { UsernamePasswordInput } from './UsernamePasswordInput'
-
-@ObjectType()
-class FieldError {
-  @Field()
-  field: string
-
-  @Field()
-  message: string
-}
-
-@ObjectType()
-class UserResponse {
-  @Field(() => [FieldError], { nullable: true })
-  errors?: FieldError[]
-
-  @Field(() => User, { nullable: true })
-  user?: User
-}
 
 @Resolver()
 export class UserResolver {

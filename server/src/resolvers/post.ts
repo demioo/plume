@@ -2,23 +2,14 @@ import { isAuth } from 'middleware/isAuth'
 import {
   Arg,
   Ctx,
-  Field,
-  InputType,
   Mutation,
   Query,
   Resolver,
   UseMiddleware,
 } from 'type-graphql'
 import { OrmContext } from 'types'
+import { PostInput, PostResponse } from 'utils/fieldTypes'
 import { Post } from '../entities/Post'
-
-@InputType()
-class PostInput {
-  @Field()
-  title: string
-  @Field()
-  text: string
-}
 
 @Resolver()
 export class PostResolver {
@@ -32,16 +23,40 @@ export class PostResolver {
     return Post.findOne(id)
   }
 
-  @Mutation(() => Post)
+  @Mutation(() => PostResponse)
   @UseMiddleware(isAuth)
   async createPost(
     @Arg('input') input: PostInput,
     @Ctx() { req }: OrmContext
-  ): Promise<Post> {
-    return Post.create({
+  ): Promise<PostResponse> {
+    if (!input.title) {
+      return {
+        errors: [
+          {
+            field: 'title',
+            message: 'title can not be empty',
+          },
+        ],
+      }
+    }
+
+    if (!input.text) {
+      return {
+        errors: [
+          {
+            field: 'text',
+            message: 'body can not be empty',
+          },
+        ],
+      }
+    }
+
+    const post = await Post.create({
       ...input,
       creatorId: req.session.userId,
     }).save()
+
+    return { post }
   }
 
   @Mutation(() => Post, { nullable: true })
