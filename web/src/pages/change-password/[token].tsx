@@ -3,18 +3,25 @@ import { Form, Formik } from 'formik'
 import { NextPage } from 'next'
 import { withUrqlClient, WithUrqlProps } from 'next-urql'
 import { useRouter } from 'next/dist/client/router'
-import React, { FunctionComponent, PropsWithChildren, useState } from 'react'
 import NextLink from 'next/link'
+import React, {
+  FunctionComponent,
+  PropsWithChildren,
+  useState,
+} from 'react'
 import { InputField } from '../../components/InputField'
 import { Wrapper } from '../../components/Wrapper'
 import { useChangePasswordMutation } from '../../generated/graphql'
 import { createUrqlClient } from '../../utils/createUrqlClient'
 import { toErrorMap } from '../../utils/toErrorMap'
 
-const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
+const ChangePassword: NextPage = () => {
   const router = useRouter()
   const [, changePassword] = useChangePasswordMutation()
   const [tokenError, setTokenError] = useState('')
+
+  const token =
+    typeof router.query.token === 'string' ? router.query.token : ''
 
   const buttonToDisplay = (
     tokenErrorExists: boolean,
@@ -27,7 +34,11 @@ const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
         </NextLink>
       </Button>
     ) : (
-      <Button type="submit" isLoading={isSubmitting} colorScheme="purple">
+      <Button
+        type="submit"
+        isLoading={isSubmitting}
+        colorScheme="purple"
+      >
         Change password
       </Button>
     )
@@ -43,7 +54,9 @@ const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
             token,
           })
           if (response.data?.changePassword.errors) {
-            const errorMap = toErrorMap(response.data.changePassword.errors)
+            const errorMap = toErrorMap(
+              response.data.changePassword.errors
+            )
             if ('token' in errorMap) {
               setTokenError(errorMap.token)
             }
@@ -77,12 +90,6 @@ const ChangePassword: NextPage<{ token: string }> = ({ token }) => {
       </Formik>
     </Wrapper>
   )
-}
-
-ChangePassword.getInitialProps = ({ query }) => {
-  return {
-    token: query.token as string,
-  }
 }
 
 export default withUrqlClient(createUrqlClient)(
