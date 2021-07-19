@@ -13,9 +13,10 @@ import { User } from './entities/User'
 import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
 import { OrmContext } from './types'
+import path from 'path'
 
 const main = async () => {
-  await createConnection({
+  const conn = await createConnection({
     type: 'postgres',
     database: 'plume',
     username: 'postgres',
@@ -23,7 +24,9 @@ const main = async () => {
     logging: true,
     synchronize: true,
     entities: [Post, User],
+    migrations: [path.join(__dirname, './migrations/*')],
   })
+  await conn.runMigrations()
 
   const app = express()
 
