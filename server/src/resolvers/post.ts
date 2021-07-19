@@ -2,37 +2,44 @@ import { isAuth } from 'middleware/isAuth'
 import {
   Arg,
   Ctx,
+  FieldResolver,
   Int,
   Mutation,
   Query,
   Resolver,
+  Root,
   UseMiddleware,
 } from 'type-graphql'
-import { getConnection, getRepository, createQueryBuilder } from 'typeorm'
+import { getConnection } from 'typeorm'
 import { OrmContext } from 'types'
 import { PostInput, PostResponse } from 'utils/fieldTypes'
 import { Post } from '../entities/Post'
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post) {
+    return root.text.slice(0, 50)
+  }
+
   @Query(() => [Post])
   async posts(
-    @Arg("limit", () => Int) limit: number,
-    @Arg("cursor", () => String, { nullable: true }) cursor: string | null
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, { nullable: true })
+    cursor: string | null
   ): Promise<Post[]> {
     const realLimit = Math.min(50, limit)
 
     const qb = getConnection()
       .getRepository(Post)
-      .createQueryBuilder("p")
-      .orderBy('"createdAt"', "DESC")
+      .createQueryBuilder('p')
+      .orderBy('"createdAt"', 'DESC')
       .take(realLimit)
 
     if (cursor) {
       qb.where('"createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor))
+        cursor: new Date(parseInt(cursor)),
       })
-
     }
 
     return qb.getMany()
