@@ -48,3 +48,11 @@ export class PostResponse {
   @Field(() => Post, { nullable: true })
   post?: Post
 }
+
+@ObjectType()
+export class PaginatedPosts {
+  @Field(() => [Post])
+  posts: Post[]
+  @Field()
+  hasMore: boolean
+}
