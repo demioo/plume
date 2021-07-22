@@ -1,5 +1,13 @@
 import argon2 from 'argon2'
-import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql'
+import {
+  Arg,
+  Ctx,
+  FieldResolver,
+  Mutation,
+  Query,
+  Resolver,
+  Root,
+} from 'type-graphql'
 import { OrmContext } from 'types'
 import { v4 } from 'uuid'
 import {
@@ -15,8 +23,19 @@ import {
 import { validateRegister } from '../utils/helpers'
 import { sendEmail } from '../utils/sendEmail'
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+  @FieldResolver(() => String)
+  email(@Root() user: User, @Ctx() { req }: OrmContext) {
+    // this is the current user and it's okay to show them their own email
+    if (req.session.userId === user.id) {
+      return user.email
+    }
+
+    // current user wants to see someone else's email
+    return ''
+  }
+
   @Mutation(() => UserResponse)
   async changePassword(
     @Arg('token') token: string,
