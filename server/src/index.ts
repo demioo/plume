@@ -14,6 +14,7 @@ import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
 import { OrmContext } from './types'
 import path from 'path'
+import { Upvote } from 'entities/Upvote'
 
 const main = async () => {
   const conn = await createConnection({
@@ -23,7 +24,7 @@ const main = async () => {
     password: 'postgres',
     logging: true,
     synchronize: true,
-    entities: [Post, User],
+    entities: [Post, User, Upvote],
     migrations: [path.join(__dirname, './migrations/*')],
   })
   await conn.runMigrations()

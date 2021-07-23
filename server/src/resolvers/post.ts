@@ -26,6 +26,36 @@ export class PostResolver {
     return root.text.slice(0, 50)
   }
 
+  @Mutation(() => Boolean)
+  @UseMiddleware(isAuth)
+  async vote(
+    @Arg('postId', () => Int) postId: number,
+    @Arg('value', () => Int) value: number,
+    @Ctx() { req }: OrmContext
+  ) {
+    const isUpvote = value !== -1
+    const realValue = isUpvote ? 1 : -1
+
+    const { userId } = req.session
+
+    await getConnection().query(
+      `
+      START TRANSACTION;
+
+      INSERT INTO upvote ("userId", "postId", value)
+      values(${userId}, ${postId}, ${realValue});
+
+      UPDATE post
+      SET points = points + ${realValue}
+      WHERE id = ${postId};
+
+      COMMIT;
+    `
+    )
+
+    return true
+  }
+
   @Query(() => PaginatedPosts)
   async posts(
     @Arg('limit', () => Int) limit: number,
