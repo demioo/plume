@@ -23,8 +23,6 @@ const Index = () => {
     variables,
   })
 
-  console.log('variables: ', variables)
-
   if (!fetching && !data) {
     return (
       <div>Something went wrong. Please try reloading the page</div>
