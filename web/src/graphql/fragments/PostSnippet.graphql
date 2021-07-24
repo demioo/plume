@@ -8,6 +8,7 @@ fragment PostSnippet on Post {
   updatedAt
   textSnippet
   points
+  voteStatus
   creator {
     id
     username

@@ -16,6 +16,7 @@ import {
   RegisterMutation,
   VoteMutationVariables,
 } from '../generated/graphql'
+import { isServer } from './isServer'
 import { updateQuery } from './updateQuery'
 
 export const errorExchange: Exchange =
@@ -72,105 +73,128 @@ export const cursorPagination = (): Resolver => {
   }
 }
 
-export const createUrqlClient = (ssrExchange: any) => ({
-  url: 'http://localhost:4000/graphql',
-  fetchOptions: {
-    credentials: 'include' as const,
-  },
-  exchanges: [
-    dedupExchange,
-    cacheExchange({
-      keys: {
-        PaginatedPosts: () => null,
-      },
-      resolvers: {
-        Query: {
-          posts: cursorPagination(),
-        },
-      },
-      updates: {
-        Mutation: {
-          vote: (_result, args, cache, _info) => {
-            const { postId, value } = args as VoteMutationVariables
-            const data = cache.readFragment(
-              gql`
-                fragment _ on Post {
-                  id
-                  points
-                }
-              `,
-              { id: postId }
-            ) as { id: number; points: number }
+export const createUrqlClient = (ssrExchange: any, ctx: any) => {
+  let cookie = ''
+  if (isServer()) {
+    cookie = ctx.req.headers.cookie
+  }
 
-            if (data) {
-              const newPoints = (data.points as number) + value
-              cache.writeFragment(
+  return {
+    url: 'http://localhost:4000/graphql',
+    fetchOptions: {
+      credentials: 'include' as const,
+      headers: cookie
+        ? {
+            cookie,
+          }
+        : undefined,
+    },
+    exchanges: [
+      dedupExchange,
+      cacheExchange({
+        keys: {
+          PaginatedPosts: () => null,
+        },
+        resolvers: {
+          Query: {
+            posts: cursorPagination(),
+          },
+        },
+        updates: {
+          Mutation: {
+            vote: (_result, args, cache, _info) => {
+              const { postId, value } = args as VoteMutationVariables
+              const data = cache.readFragment(
                 gql`
-                  fragment __ on Post {
+                  fragment _ on Post {
+                    id
                     points
+                    voteStatus
                   }
                 `,
-                { id: postId, points: newPoints }
+                { id: postId }
+              ) as {
+                id: number
+                points: number
+                voteStatus: number | null
+              }
+
+              if (data) {
+                if (data.voteStatus === args.value) {
+                  return
+                }
+                const newPoints =
+                  (data.points as number) +
+                  (!data.voteStatus ? 1 : 2) * value
+                cache.writeFragment(
+                  gql`
+                    fragment __ on Post {
+                      points
+                      voteStatus
+                    }
+                  `,
+                  { id: postId, points: newPoints, voteStatus: value }
+                )
+              }
+            },
+            createPost: (_result, _args, cache, _info) => {
+              const allFields = cache.inspectFields('Query')
+              const fieldInfos = allFields.filter(
+                (info) => info.fieldName === 'posts'
               )
-            }
-          },
-          createPost: (_result, _args, cache, _info) => {
-            const allFields = cache.inspectFields('Query')
-            const fieldInfos = allFields.filter(
-              (info) => info.fieldName === 'posts'
-            )
-            fieldInfos.forEach((fi) => {
-              cache.invalidate('Query', 'posts', fi.arguments)
-            })
-            cache.invalidate('Query', 'posts', {
-              limit: 15,
-            })
-          },
-          login: (_result, _args, cache, _info) => {
-            updateQuery<LoginMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              _result,
-              (result, query) => {
-                if (result.login.errors) {
-                  return query
-                } else {
-                  return {
-                    me: result.login.user,
+              fieldInfos.forEach((fi) => {
+                cache.invalidate('Query', 'posts', fi.arguments)
+              })
+              cache.invalidate('Query', 'posts', {
+                limit: 15,
+              })
+            },
+            login: (_result, _args, cache, _info) => {
+              updateQuery<LoginMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                _result,
+                (result, query) => {
+                  if (result.login.errors) {
+                    return query
+                  } else {
+                    return {
+                      me: result.login.user,
+                    }
                   }
                 }
-              }
-            )
-          },
-          register: (_result, _args, cache, _info) => {
-            updateQuery<RegisterMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              _result,
-              (result, query) => {
-                if (result.register.errors) {
-                  return query
-                } else {
-                  return {
-                    me: result.register.user,
+              )
+            },
+            register: (_result, _args, cache, _info) => {
+              updateQuery<RegisterMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                _result,
+                (result, query) => {
+                  if (result.register.errors) {
+                    return query
+                  } else {
+                    return {
+                      me: result.register.user,
+                    }
                   }
                 }
-              }
-            )
-          },
-          logout: (_result, _args, cache, _info) => {
-            updateQuery<LogoutMutation, MeQuery>(
-              cache,
-              { query: MeDocument },
-              _result,
-              () => ({ me: null })
-            )
+              )
+            },
+            logout: (_result, _args, cache, _info) => {
+              updateQuery<LogoutMutation, MeQuery>(
+                cache,
+                { query: MeDocument },
+                _result,
+                () => ({ me: null })
+              )
+            },
           },
         },
-      },
-    }),
-    errorExchange,
-    ssrExchange,
-    fetchExchange,
-  ],
-})
+      }),
+      errorExchange,
+      ssrExchange,
+      fetchExchange,
+    ],
+  }
+}
