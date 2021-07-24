@@ -96,15 +96,25 @@ export class PostResolver {
   async posts(
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', () => String, { nullable: true })
+    @Ctx()
+    { req }: OrmContext,
     cursor: string | null
   ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit)
     const realLimitPlusOne = realLimit + 1
 
+    const userId = req.session.userId
+
     const replacements: any[] = [realLimitPlusOne]
 
+    if (userId) {
+      replacements.push(userId)
+    }
+
+    let cursorIdx = 3
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)))
+      cursorIdx = replacements.length
     }
 
     const posts = await getConnection().query(
@@ -116,10 +126,15 @@ export class PostResolver {
           'email', u.email,
           'createdAt', u."createdAt",
           'updatedAt', u."updatedAt"
-          ) creator
+          ) creator,
+        ${
+          userId
+            ? '(SELECT value from upvote WHERE "userId" = $2 and "postId" = p.id) "voteStatus"'
+            : 'null as "voteStatus"'
+        }
         FROM post p
         INNER JOIN public.user u ON u.id = p."creatorId"
-        ${cursor ? `WHERE p."createdAt" < $2` : ''}
+        ${cursor ? `WHERE p."createdAt" < $${cursorIdx}` : ''}
         ORDER BY p."createdAt" DESC
         LIMIT $1
       `,
