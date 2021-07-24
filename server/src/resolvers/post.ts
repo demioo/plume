@@ -1,3 +1,4 @@
+import { Upvote } from 'entities/Upvote'
 import { isAuth } from 'middleware/isAuth'
 import {
   Arg,
@@ -38,20 +39,55 @@ export class PostResolver {
 
     const { userId } = req.session
 
-    await getConnection().query(
-      `
-      START TRANSACTION;
+    const upvote = await Upvote.findOne({ where: { postId, userId } })
 
-      INSERT INTO upvote ("userId", "postId", value)
-      values(${userId}, ${postId}, ${realValue});
+    if (upvote && upvote.value !== realValue) {
+      // user has already voted on the post
+      // and they are changing their vote
+      await getConnection().transaction(
+        async (transactionManager) => {
+          await transactionManager.query(
+            `
+              UPDATE upvote 
+              SET VALUE = $1
+              WHERE "postId" = $2 and "userId" = $3
+            `,
+            [realValue, postId, userId]
+          )
 
-      UPDATE post
-      SET points = points + ${realValue}
-      WHERE id = ${postId};
+          await transactionManager.query(
+            `
+              UPDATE post 
+              SET points = points + $1
+              WHERE id = $2
+            `,
+            [2 * realValue, postId]
+          )
+        }
+      )
+    } else if (!upvote) {
+      // user hasn't voted yet
+      await getConnection().transaction(
+        async (transactionManager) => {
+          await transactionManager.query(
+            `
+              INSERT INTO upvote ("userId", "postId", value)
+              values($1, $2, $3) 
+            `,
+            [userId, postId, realValue]
+          )
 
-      COMMIT;
-    `
-    )
+          await transactionManager.query(
+            `
+              UPDATE post
+              SET points = points + $1
+              WHERE id = $2
+            `,
+            [realValue, postId]
+          )
+        }
+      )
+    }
 
     return true
   }
