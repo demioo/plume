@@ -24,6 +24,9 @@ export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
     >
       <IconButton
         onClick={async () => {
+          if (post.voteStatus === 1) {
+            return
+          }
           setLoadingState('upvote-loading')
           await vote({
             postId: post.id,
@@ -35,12 +38,15 @@ export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
         aria-label="upvote post"
         icon={<ChevronUpIcon />}
         size="sm"
-        colorScheme="purple"
+        colorScheme={post.voteStatus === 1 ? 'purple' : 'blackAlpha'}
         isRound
       />
       <Box my={2}>{post.points}</Box>
       <IconButton
         onClick={async () => {
+          if (post.voteStatus === -1) {
+            return
+          }
           setLoadingState('downvote-loading')
           await vote({
             postId: post.id,
@@ -52,7 +58,7 @@ export const VoteSection: React.FC<VoteSectionProps> = ({ post }) => {
         aria-label="downvote post"
         icon={<ChevronDownIcon />}
         size="sm"
-        colorScheme="purple"
+        colorScheme={post.voteStatus === -1 ? 'orange' : 'blackAlpha'}
         isRound
       />
     </Flex>
