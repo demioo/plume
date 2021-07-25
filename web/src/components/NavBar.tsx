@@ -29,7 +29,17 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     )
   } else {
     body = (
-      <Flex>
+      <Flex align="center">
+        <NextLink href="/create-post">
+          <Button
+            style={{ textDecoration: 'none' }}
+            colorScheme="green"
+            as={Link}
+            mr={2}
+          >
+            Create post
+          </Button>
+        </NextLink>
         <Box mr={4}>{data.me.username}</Box>
         <Button
           onClick={() => {
@@ -52,12 +62,14 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
       bg={'purple.300'}
       p={4}
     >
-      <NextLink href="/">
-        <Link style={{ textDecoration: 'none' }}>
-          <Heading size="md">Plume</Heading>
-        </Link>
-      </NextLink>
-      <Box ml={'auto'}>{body}</Box>
+      <Flex flex={1} maxW={800} align="center" m="auto">
+        <NextLink href="/">
+          <Link style={{ textDecoration: 'none' }}>
+            <Heading size="md">Plume</Heading>
+          </Link>
+        </NextLink>
+        <Box ml={'auto'}>{body}</Box>
+      </Flex>
     </Flex>
   )
 }
