@@ -1,10 +1,8 @@
-import { DeleteIcon } from '@chakra-ui/icons'
 import {
   Box,
   Button,
   Flex,
   Heading,
-  IconButton,
   Link,
   Stack,
   Text,
@@ -12,13 +10,10 @@ import {
 import { withUrqlClient } from 'next-urql'
 import NextLink from 'next/link'
 import React, { useState } from 'react'
+import { EditAndDeleteButtons } from '../components/EditAndDeleteButtons'
 import { Layout } from '../components/Layout'
 import { VoteSection } from '../components/VoteSection'
-import {
-  useDeletePostMutation,
-  useMeQuery,
-  usePostsQuery,
-} from '../generated/graphql'
+import { useMeQuery, usePostsQuery } from '../generated/graphql'
 import { createUrqlClient } from '../utils/createUrqlClient'
 import { isServer } from '../utils/isServer'
 
@@ -34,8 +29,6 @@ const Index = () => {
     pause: isServer(),
   })
 
-  const [, deletePost] = useDeletePostMutation()
-
   if (!fetching && !data) {
     return (
       <div>Something went wrong. Please try reloading the page</div>
@@ -48,8 +41,8 @@ const Index = () => {
         <div>Loading...</div>
       ) : (
         <Stack spacing={8}>
-          {data!.posts.posts.map((post) =>
-            !post ? null : (
+          {data!.posts.posts.map((post) => {
+            return !post ? null : (
               <Flex p={5} key={post.id} shadow="md" borderWidth="1px">
                 <VoteSection post={post} />
                 <Box flex={1}>
@@ -63,21 +56,17 @@ const Index = () => {
                     <Text flex={1} mt={4}>
                       {post.textSnippet}
                     </Text>
-                    {post.creatorId === userData?.me?.id && (
-                      <IconButton
-                        icon={<DeleteIcon />}
-                        colorScheme="blackAlpha"
-                        aria-label="Delete post"
-                        onClick={() => {
-                          deletePost({ id: post.id })
-                        }}
+                    <Box ml="auto">
+                      <EditAndDeleteButtons
+                        id={post.id}
+                        creatorId={post.creator.id}
                       />
-                    )}
+                    </Box>
                   </Flex>
                 </Box>
               </Flex>
             )
-          )}
+          })}
         </Stack>
       )}
       {data && data.posts.hasMore && (
