@@ -207,9 +207,24 @@ export class PostResolver {
   }
 
   @Mutation(() => Boolean)
-  async deletePost(@Arg('id') id: number): Promise<boolean> {
+  @UseMiddleware(isAuth)
+  async deletePost(
+    @Arg('id', () => Int) id: number,
+    @Ctx() { req }: OrmContext
+  ): Promise<boolean> {
     try {
-      await Post.delete(id)
+      const post = await Post.findOne(id)
+      if (!post) {
+        return false
+      }
+
+      if (post.creatorId !== req.session.userId) {
+        throw new Error('not authorised')
+      }
+
+      await Upvote.delete({ postId: id })
+
+      await Post.delete({ id, creatorId: req.session.userId })
     } catch {
       return false
     }
