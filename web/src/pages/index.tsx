@@ -22,7 +22,7 @@ const Index = () => {
     limit: 15,
     cursor: null as null | string,
   })
-  const [{ data, fetching }] = usePostsQuery({
+  const [{ data, error, fetching }] = usePostsQuery({
     variables,
   })
   const [{ data: userData }] = useMeQuery({
@@ -31,7 +31,10 @@ const Index = () => {
 
   if (!fetching && !data) {
     return (
-      <div>Something went wrong. Please try reloading the page</div>
+      <Box>
+        <div>Something went wrong. Please try reloading the page</div>
+        <div>{error?.message}</div>
+      </Box>
     )
   }
 

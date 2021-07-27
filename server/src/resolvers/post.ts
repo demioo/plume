@@ -1,4 +1,5 @@
 import { Upvote } from 'entities/Upvote'
+import { User } from 'entities/User'
 import { isAuth } from 'middleware/isAuth'
 import {
   Arg,
@@ -25,6 +26,30 @@ export class PostResolver {
   @FieldResolver(() => String)
   textSnippet(@Root() root: Post) {
     return root.text.slice(0, 50)
+  }
+
+  @FieldResolver(() => User)
+  creator(@Root() post: Post, @Ctx() { userLoader }: OrmContext) {
+    return userLoader.load(post.creatorId)
+  }
+
+  @FieldResolver(() => Int, { nullable: true })
+  async voteStatus(
+    @Root() post: Post,
+    @Ctx() { upvoteLoader, req }: OrmContext
+  ) {
+    const userId = req.session.userId
+
+    if (!userId) {
+      return null
+    }
+
+    const upvote = await upvoteLoader.load({
+      postId: post.id,
+      userId,
+    })
+
+    return upvote ? upvote.value : null
   }
 
   @Mutation(() => Boolean)
@@ -107,34 +132,15 @@ export class PostResolver {
 
     const replacements: any[] = [realLimitPlusOne]
 
-    if (userId) {
-      replacements.push(userId)
-    }
-
-    let cursorIdx = 3
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)))
-      cursorIdx = replacements.length
     }
 
     const posts = await getConnection().query(
       `
-        SELECT p.*,
-        json_build_object(
-          'id', u.id,
-          'username', u.username,
-          'email', u.email,
-          'createdAt', u."createdAt",
-          'updatedAt', u."updatedAt"
-          ) creator,
-        ${
-          userId
-            ? '(SELECT value from upvote WHERE "userId" = $2 and "postId" = p.id) "voteStatus"'
-            : 'null as "voteStatus"'
-        }
+        SELECT p.*
         FROM post p
-        INNER JOIN public.user u ON u.id = p."creatorId"
-        ${cursor ? `WHERE p."createdAt" < $${cursorIdx}` : ''}
+        ${cursor ? `WHERE p."createdAt" < $2` : ''}
         ORDER BY p."createdAt" DESC
         LIMIT $1
       `,
@@ -149,7 +155,7 @@ export class PostResolver {
 
   @Query(() => Post, { nullable: true })
   post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
-    return Post.findOne(id, { relations: ['creator'] })
+    return Post.findOne(id)
   }
 
   @Mutation(() => PostResponse)
